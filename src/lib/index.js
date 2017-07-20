@@ -20,8 +20,8 @@ export {
 } from './debug'
 
 export * from './factories'
-export { default as getUnhandledProps } from './getUnhandledProps'
-export { default as getElementType } from './getElementType'
+export getUnhandledProps from './getUnhandledProps'
+export getElementType from './getElementType'
 
 export {
   htmlInputAttrs,
