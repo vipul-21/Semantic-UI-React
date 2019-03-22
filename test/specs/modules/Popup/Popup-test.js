@@ -21,21 +21,24 @@ const wrapperShallow = (...args) => (wrapper = shallow(...args))
 
 const assertIn = (node, selector, isPresent = true) => {
   const didFind = node.querySelector(selector) !== null
-  didFind.should.equal(isPresent, `${didFind ? 'Found' : 'Did not find'} "${selector}" in the ${node}.`)
+  didFind.should.equal(
+    isPresent,
+    `${didFind ? 'Found' : 'Did not find'} "${selector}" in the ${node}.`,
+  )
 }
 const assertInBody = (...args) => assertIn(document.body, ...args)
 
 describe('Popup', () => {
   beforeEach(() => {
     wrapper = undefined
-    document.body.innerHTML = ''
   })
 
   afterEach(() => {
     if (wrapper && wrapper.unmount) wrapper.unmount()
   })
 
-  common.hasSubComponents(Popup, [PopupHeader, PopupContent])
+  common.isConformant(Popup, { rendersPortal: true })
+  common.hasSubcomponents(Popup, [PopupHeader, PopupContent])
   common.hasValidTypings(Popup)
 
   // Heads up!
@@ -58,9 +61,7 @@ describe('Popup', () => {
   it('renders child text', () => {
     wrapperMount(<Popup open>child text</Popup>)
 
-    document.querySelector('.ui.popup.visible')
-      .innerText
-      .should.equal('child text')
+    document.querySelector('.ui.popup.visible').innerText.should.equal('child text')
   })
 
   it('renders child components', () => {
@@ -78,11 +79,11 @@ describe('Popup', () => {
     assertInBody('.ui.popup.visible.some-class')
   })
 
-  describe('offest', () => {
-    it('accepts an offest to the left', () => {
+  describe('offset', () => {
+    it('accepts an offset to the left', () => {
       wrapperMount(
         <Popup
-          offset={50}
+          horizontalOffset={50}
           position='bottom right'
           content='foo'
           trigger={<button>foo</button>}
@@ -92,10 +93,10 @@ describe('Popup', () => {
       wrapper.find('button').simulate('click')
       assertInBody('.ui.popup.visible')
     })
-    it('accepts an offest to the right', () => {
+    it('accepts an offset to the right', () => {
       wrapperMount(
         <Popup
-          offset={50}
+          horizontalOffset={50}
           position='bottom left'
           content='foo'
           trigger={<button>foo</button>}
@@ -105,37 +106,105 @@ describe('Popup', () => {
       wrapper.find('button').simulate('click')
       assertInBody('.ui.popup.visible')
     })
+    it('causes the style to be updated', () => {
+      wrapperMount(
+        <Popup
+          horizontalOffset={50}
+          position='bottom left'
+          content='foo'
+          trigger={<button>foo</button>}
+        />,
+      )
+
+      wrapper.find('button').simulate('click')
+      const element = document.querySelector('.popup.ui')
+      element.style.should.have.property('left', '-50px')
+      wrapper.setProps({ horizontalOffset: 60 })
+      element.style.should.have.property('left', '-60px')
+    })
+  })
+
+  describe('verticalOffset', () => {
+    it('accepts a vertical offset to the top', () => {
+      wrapperMount(
+        <Popup
+          verticalOffset={50}
+          position='bottom right'
+          content='foo'
+          trigger={<button>foo</button>}
+        />,
+      )
+
+      wrapper.find('button').simulate('click')
+      assertInBody('.ui.popup.visible')
+    })
+    it('accepts a vertical offset to the bottom', () => {
+      wrapperMount(
+        <Popup
+          verticalOffset={50}
+          position='top left'
+          content='foo'
+          trigger={<button>foo</button>}
+        />,
+      )
+
+      wrapper.find('button').simulate('click')
+      assertInBody('.ui.popup.visible')
+    })
+    it('causes the style to be updated', () => {
+      wrapperMount(
+        <Popup
+          verticalOffset={50}
+          position='bottom right'
+          content='foo'
+          trigger={<button>foo</button>}
+        />,
+      )
+
+      wrapper.find('button').simulate('click')
+      const element = document.querySelector('.popup.ui')
+      element.style.should.have.property('top', '50px')
+      wrapper.setProps({ verticalOffset: 60 })
+      element.style.should.have.property('top', '60px')
+    })
   })
 
   describe('position', () => {
     POSITIONS.forEach((position) => {
-      it('is always within the viewport', () => {
+      it(`"${position}" is always within the viewport when the trigger is clicked`, () => {
         wrapperMount(
-          <Popup
-            content='_'
-            position={position}
-            trigger={<button>foo</button>}
-            on='click'
-          />,
+          <Popup content='_' position={position} trigger={<button>foo</button>} on='click' />,
         )
         wrapper.find('button').simulate('click')
 
         const rect = document.querySelector('.popup.ui').getBoundingClientRect()
         const { top, right, bottom, left } = rect
-
         expect(top).to.be.at.least(0)
         expect(left).to.be.at.least(0)
         expect(bottom).to.be.at.most(document.documentElement.clientHeight)
         expect(right).to.be.at.most(document.documentElement.clientWidth)
       })
-      it('is the original if no position fits within the viewport', () => {
+      it(`"${position}" is positioned properly when open property is set`, (done) => {
+        wrapperMount(<Popup content='_' position={position} open trigger={<button>foo</button>} />)
+        setTimeout(() => {
+          const element = document.querySelector('.popup.ui')
+          const { top, left, bottom, right } = element.style
+          expect(element.style.position).to.equal('absolute')
+          expect(top).to.not.equal('')
+          expect(left).to.not.equal('')
+          expect(bottom).to.not.equal('')
+          expect(right).to.not.equal('')
+          done()
+        }, 1)
+      })
+      it(`"${position}" is the original if no horizontal position fits within the viewport`, () => {
         wrapperMount(
           <Popup
             content='_'
             position={position}
             trigger={<button>foo</button>}
             on='click'
-            offset={999}
+            horizontalOffset={999}
           />,
         )
         wrapper.find('button').simulate('click')
@@ -143,6 +212,70 @@ describe('Popup', () => {
 
         expect(selectedPosition).to.equal(position)
       })
+
+      it(`"${position}" is the original if no vertical position fits within the viewport`, () => {
+        wrapperMount(
+          <Popup
+            content='_'
+            position={position}
+            trigger={<button>foo</button>}
+            on='click'
+            verticalOffset={3000}
+          />,
+        )
+        wrapper.find('button').simulate('click')
+        const selectedPosition = wrapper.state('position')
+
+        expect(selectedPosition).to.equal(position)
+      })
+    })
+  })
+
+  describe('keepInViewPort', () => {
+    it('will not alter the position and render outside the viewport if set to false', () => {
+      wrapperMount(
+        <Popup
+          content='_'
+          position='top center'
+          trigger={<button>foo</button>}
+          on='click'
+          keepInViewPort={false}
+        />,
+      )
+      wrapper.find('button').simulate('click')
+
+      const rect = document.querySelector('.popup.ui').getBoundingClientRect()
+      const { top } = rect
+
+      const selectedPosition = wrapper.state('position')
+
+      expect(selectedPosition).to.equal('top center')
+      expect(top).to.be.below(0)
+    })
+
+    it('is enabled by default', () => {
+      expect(Popup.defaultProps.keepInViewPort).to.equal(true)
+    })
+
+    it('alters the position when true and renders within the viewport', () => {
+      wrapperMount(
+        <Popup
+          content='_'
+          position='top center'
+          trigger={<button>foo</button>}
+          on='click'
+          keepInViewPort
+        />,
+      )
+      wrapper.find('button').simulate('click')
+
+      const rect = document.querySelector('.popup.ui').getBoundingClientRect()
+      const { top } = rect
+
+      const selectedPosition = wrapper.state('position')
+
+      expect(selectedPosition).to.not.equal('top center')
+      expect(top).to.be.at.least(0)
     })
   })
 
@@ -162,14 +295,21 @@ describe('Popup', () => {
       wrapper.find('button').simulate('click')
       assertInBody('.ui.popup.visible')
 
-      document.body.scrollTop = 100
-
-      const evt = document.createEvent('CustomEvent')
-      evt.initCustomEvent('scroll', false, false, null)
-
-      window.dispatchEvent(evt)
-
+      domEvent.scroll(window)
       assertInBody('.ui.popup.visible', false)
+    })
+
+    it('is called with (e, props) when scroll', () => {
+      const onClose = sandbox.spy()
+      const trigger = <button>foo</button>
+
+      wrapperMount(<Popup content='foo' hideOnScroll onClose={onClose} trigger={trigger} />)
+        .find('button')
+        .simulate('click')
+
+      domEvent.scroll(window)
+      onClose.should.have.been.calledOnce()
+      onClose.should.have.been.calledWithMatch({}, { content: 'foo', onClose, trigger })
     })
   })
 
@@ -184,13 +324,13 @@ describe('Popup', () => {
 
     it('it appears on hover', (done) => {
       const trigger = <button>foo</button>
-      wrapperMount(<Popup content='foo' trigger={trigger} />)
+      wrapperMount(<Popup content='foo' trigger={trigger} mouseEnterDelay={0} />)
 
       wrapper.find('button').simulate('mouseenter')
       setTimeout(() => {
         assertInBody('.ui.popup.visible')
         done()
-      }, 51)
+      }, 1)
     })
 
     it('it appears on focus', () => {
@@ -203,8 +343,9 @@ describe('Popup', () => {
 
     it('it appears on multiple', (done) => {
       const trigger = <button>foo</button>
-      const button = wrapperMount(<Popup on={['click', 'hover']} content='foo' header='bar' trigger={trigger} />)
-      .find('button')
+      const button = wrapperMount(
+        <Popup on={['click', 'hover']} content='foo' header='bar' trigger={trigger} />,
+      ).find('button')
 
       button.simulate('click')
       assertInBody('.ui.popup.visible')
@@ -216,6 +357,74 @@ describe('Popup', () => {
         assertInBody('.ui.popup.visible')
         done()
       }, 51)
+    })
+  })
+
+  describe('context', () => {
+    // We're expecting to see this:
+    //
+    // |- context -----------------------------|
+    // |             99px x 10px               |
+    // |---------------------------------------|
+    //                  ---^---
+    //                 | popup |
+    //                  -------
+
+    it('aligns the popup to the context node', () => {
+      const context = document.createElement('div')
+      context.innerText = '.'
+      context.style.marginTop = '400px'
+      context.style.marginLeft = '400px'
+      context.style.width = '99px'
+      context.style.height = '10px'
+
+      document.body.appendChild(context)
+      const contextRect = context.getBoundingClientRect()
+
+      wrapperMount(
+        <Popup id='context-popup' context={context} content='.' position='bottom center' open />,
+      )
+
+      const popupRect = document.querySelector('#context-popup').getBoundingClientRect()
+
+      document.body.removeChild(context)
+
+      popupRect.top.should.equal(
+        contextRect.bottom,
+        "The popup's top should have been equal to the context's bottom.",
+      )
+    })
+
+    it('aligns the popup to the context node even when there is a trigger', () => {
+      const context = document.createElement('div')
+      context.innerText = '.'
+      context.style.marginTop = '400px'
+      context.style.marginLeft = '400px'
+      context.style.width = '99px'
+      context.style.height = '10px'
+
+      document.body.appendChild(context)
+      const contextRect = context.getBoundingClientRect()
+
+      wrapperMount(
+        <Popup
+          id='context-popup'
+          trigger={<button />}
+          context={context}
+          content='.'
+          position='bottom center'
+          open
+        />,
+      )
+
+      const popupRect = document.querySelector('#context-popup').getBoundingClientRect()
+
+      document.body.removeChild(context)
+
+      popupRect.top.should.equal(
+        contextRect.bottom,
+        "The popup's top should have been equal to the context's bottom.",
+      )
     })
   })
 
@@ -256,6 +465,26 @@ describe('Popup', () => {
       wrapper.setProps({ open: false })
 
       assertInBody('.ui.popup.visible', false)
+    })
+  })
+
+  describe('disabled', () => {
+    it('is not disabled by default', () => {
+      shallow(<Popup />)
+        .find('Portal')
+        .should.exist()
+    })
+
+    it('does not render Portal if disabled', () => {
+      shallow(<Popup disabled />)
+        .find('Portal')
+        .should.not.exist()
+    })
+
+    it('does not render Portal even with open prop', () => {
+      shallow(<Popup open disabled />)
+        .find('Portal')
+        .should.not.exist()
     })
   })
 

@@ -1,13 +1,16 @@
-/**
- * Tasks live in the tasks directory.
- * This file just loads all the gulp tasks.
- */
+require('@babel/register')({
+  ignore: [/node_modules/, /docs[\\/]dist/],
+})
+
 const { task, parallel } = require('gulp')
-const requireDir = require('require-dir')
+const path = require('path')
 
-requireDir('./gulp/tasks')
+// add node_modules/.bin to the path so we can invoke .bin CLIs in tasks
+process.env.PATH = `${process.env.PATH}:${path.resolve('./node_modules/.bin')}`
 
-// do not use tasks/default
-// the default task must be loaded after all other tasks
-// requireDir above loads all our tasks in alphabetical order
-task('default', parallel('umd', 'docs'))
+// load tasks in order of dependency usage
+require('./gulp/tasks/dist')
+require('./gulp/tasks/docs')
+
+// global tasks
+task('build', parallel('build:dist', 'build:docs'))

@@ -1,20 +1,30 @@
-import * as React from 'react';
-import { default as TabPane } from './TabPane';
+import * as React from 'react'
 
-export interface TabProps {
-  [key: string]: any;
+import { SemanticShorthandItem } from '../../generic'
+import { default as TabPane, TabPaneProps } from './TabPane'
 
+export interface TabProps extends StrictTabProps {
+  [key: string]: any
+}
+
+export interface StrictTabProps {
   /** An element type to render as (string or function). */
-  as?: any;
+  as?: any
 
   /** The initial activeIndex. */
-  defaultActiveIndex?: number | string;
+  defaultActiveIndex?: number | string
 
   /** Index of the currently active tab. */
-  activeIndex?: number | string;
+  activeIndex?: number | string
 
   /** Shorthand props for the Menu. */
-  menu?: any;
+  menu?: any
+
+  /** Align vertical menu */
+  menuPosition?: 'left' | 'right'
+
+  /** Shorthand props for the Grid. */
+  grid?: any
 
   /**
    * Called on tab change.
@@ -24,19 +34,34 @@ export interface TabProps {
    * @param {object} data.activeIndex - The new proposed activeIndex.
    * @param {object} data.panes - Props of the new proposed active pane.
    */
-  onTabChange?: (event: React.MouseEvent<HTMLDivElement>, data: TabProps) => void;
+  onTabChange?: (event: React.MouseEvent<HTMLDivElement>, data: TabProps) => void
 
-  /** Shorthand props for the Menu. */
-  panes?: Array<{
-    menuItem: any;
-    render: () => React.ReactNode;
-  }>;
+  /**
+   * Array of objects describing each Menu.Item and Tab.Pane:
+   * {
+   *   menuItem: 'Home',
+   *   render: () => <Tab.Pane>Welcome!</Tab.Pane>,
+   * }
+   * or
+   * {
+   *   menuItem: 'Home',
+   *   pane: 'Welcome',
+   * }
+   */
+  panes?: {
+    pane?: SemanticShorthandItem<TabPaneProps>;
+    menuItem?: any;
+    render?: () => React.ReactNode;
+  }[]
+
+  /** A Tab can render only active pane. */
+  renderActiveOnly?: boolean
 }
 
 interface TabComponent extends React.ComponentClass<TabProps> {
-  Pane: typeof TabPane;
+  Pane: typeof TabPane
 }
 
-declare const Tab: TabComponent;
+declare const Tab: TabComponent
 
-export default Tab;
+export default Tab

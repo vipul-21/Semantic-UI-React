@@ -11,7 +11,6 @@ CONTRIBUTING
   - [Commands](#commands)
 - [Workflow](#workflow)
   - [Create a Component](#create-a-component)
-  - [Define _meta](#define-_meta)
   - [Using propTypes](#using-proptypes)
   - [Conformance Test](#conformance-test)
   - [Open A PR](#open-a-pr)
@@ -37,6 +36,7 @@ CONTRIBUTING
   - [Components](#components)
   - [Props](#props)
   - [Examples](#examples)
+- [Releasing](#releasing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -52,13 +52,15 @@ v6.2.1
 
 ### Fork, Clone & Install
 
-Start by [forking stardust][12] to your GitHub account.  Then clone your fork and install dependencies:
+Start by [forking Semantic UI React][12] to your GitHub account.  Then clone your fork and install dependencies:
 
 ```sh
 git clone git@github.com:<your-user>/Semantic-UI-React.git
 cd Semantic-UI-React
-npm install
+yarn
 ```
+
+>Note, we use `yarn` because `npm` has unfortunately become unreliable.  Get it [here][16].
 
 Add our repo as a git remote so you can pull/rebase your fork with our latest updates:
 
@@ -72,31 +74,31 @@ Please follow the [Angular Git Commit Guidelines][8] format.
 
 ### Commands
 
->This list is not updated, you should run `npm run` to see all scripts.
+>This list is not updated, you should run `yarn run` to see all scripts.
 
 ```sh
-npm start                     // run doc site
-npm run start:local-modules   // run offline (slower builds)
+yarn start                 // run doc site
 
-npm test                      // test once
-npm run test:watch            // test on file change
+yarn ci                    // run all checks CI runs
 
-npm run build                 // build everything
-npm run build:dist            // build dist
-npm run build:docs            // build docs
-npm run build:docs-toc        // build toc for markdown files
+yarn test                  // test once
+yarn test:watch            // test on file change
 
-npm run deploy:docs           // deploy gh-pages doc site
+yarn build                 // build everything
+yarn build:dist            // build dist
+yarn build:docs            // build docs
+yarn build:docs-toc        // build toc for markdown files
 
-npm run lint                  // lint once
-npm run lint:fix              // lint and attempt to fix
-npm run lint:watch            // lint on file change
+yarn deploy:docs           // deploy gh-pages doc site
+
+yarn lint                  // lint once
+yarn lint:fix              // lint and attempt to fix
+yarn lint:watch            // lint on file change
 ```
 
 ## Workflow
 
 - [Create a Component](#create-a-component)
-- [Define _meta](#define-_meta)
 - [Conformance Test](#conformance-test)
 - [Open A PR](#open-a-pr)
 - [Spec out the API](#spec-out-the-api)
@@ -124,41 +126,6 @@ class Dropdown extends Component {
 ```
 
 >You probably need to extend our [`AutoControlledComponent`](#autocontrolledcomponent) to support both [controlled][2] and [uncontrolled][3] component patterns.
-
-### Define _meta
-
-Every component has a static property called `_meta`. This object defines the component. The values here are used for generated documentation, generated test cases and some utilities.
-
-Here's an example `_meta` object:
-
-```js
-import { META } from '../../lib'
-
-const _meta = {
-  name: 'MyComponent',
-  type: META.TYPES.MODULE,
-}
-```
-
-Assuming the above `_meta` is in scope, here's how you should expose it:
-
-```js
-function MyComponent() {
-  return <div>Hello World</div>
-}
-
-MyComponent._meta = _meta
-```
-
-```js
-class MyComponent {
-  static _meta = _meta
-
-  render() {
-    return <div>Hello World</div>
-  }
-}
-```
 
 ### Using propTypes
 
@@ -371,7 +338,7 @@ See [`src/factories`][13] for special methods to convert props values into React
 
 ## Testing
 
-Run tests during development with `npm run test:watch` to re-run tests on file changes.
+Run tests during development with `yarn test:watch` to re-run tests on file changes.
 
 ### Coverage
 
@@ -388,7 +355,7 @@ There are many common things to test for.  Because of this, we have [`test/specs
 ```js
 common.isConformant()
 common.hasUIClassName()
-common.hasSubComponents()
+common.hasSubcomponents()
 common.isTabbable()
 common.rendersChildren()
 
@@ -418,7 +385,7 @@ describe('Menu', () => {
   common.isConformant(Menu)
   common.hasUIClassName(Menu)
   common.rendersChildren(Menu)
-  common.hasSubComponents(Menu, [MenuItem]) // some take additional arguments
+  common.hasSubcomponents(Menu, [MenuItem]) // some take additional arguments
 })
 ```
 
@@ -443,7 +410,6 @@ This is the only required test.  It ensures a consistent baseline for the framew
 
 >This list is not updated, check the [source][1] for the latest assertions.
 
-1. The [static `_meta`](#_meta) object is valid
 1. Component and filename are correct
 1. Events are properly handled
 1. Extra `props` are spread
@@ -487,19 +453,19 @@ TODO
 - [Props](#props)
 - [Examples](#examples)
 
-Our docs are generated from doc block comments, `propTypes`, and hand written examples.
+Our docs are generated from docblock comments, `propTypes`, and hand written examples.
 
 ### Website
 
 Developing against the doc site is a good way to try your component as you build it. Run the doc site with:
 
 ```sh
-npm start
+yarn start
 ```
 
 ### Components
 
-A doc block should appear above a component class or function to describe it:
+A docblock should appear above a component class or function to describe it:
 
 ```js
 /**
@@ -513,7 +479,7 @@ function Select(props) {
 
 ### Props
 
-A doc block should appear above each prop in `propTypes` to describe them:
+A docblock should appear above each prop in `propTypes` to describe them:
 
 >Limited props shown for brevity.
 
@@ -537,7 +503,7 @@ Label.propTypes = {
   /** Place the label in one of the upper corners . */
   corner: PropTypes.oneOfType([
     PropTypes.bool,
-    PropTypes.oneOf(Label._meta.props.corner),
+    PropTypes.oneOf(['left', 'right']),
   ]),
 
   /** Add an icon by icon className or pass an <Icon /> */
@@ -552,9 +518,20 @@ Label.propTypes = {
 
 >This section is lacking in instruction as the the docs are set to be overhauled (PRs welcome!).
 
-Usage examples for a component live in `docs/app/Examples`.  The examples follow the SUI doc site examples.
+Usage examples for a component live in `docs/src/examples`.  The examples follow the SUI doc site examples.
 
 Adding documentation for new components is a bit tedious.  The best way to do this (for now) is to copy an existing component's and update them.
+
+## Releasing
+
+On the latest clean `master`:
+
+```sh
+npm run release:<major|minor|patch>
+```
+> :warning: `npm` must be used. At the time of writing`yarn` does not properly handle the credentials.
+
+Releasing will update the changelog which requires [github_changelog_generator][15].
 
 [1]: https://github.com/Semantic-Org/Semantic-UI-React/blob/master/test/specs/commonTests.js
 [2]: https://facebook.github.io/react/docs/forms.html#controlled-components
@@ -571,3 +548,4 @@ Adding documentation for new components is a bit tedious.  The best way to do th
 [13]: https://github.com/Semantic-Org/Semantic-UI-React/blob/master/src/factories
 [14]: https://github.com/Semantic-Org/Semantic-UI-React/pull/335#issuecomment-238960895
 [15]: https://github.com/Semantic-Org/Semantic-UI-React/issues/607
+[16]: https://yarnpkg.com/en/docs/getting-started

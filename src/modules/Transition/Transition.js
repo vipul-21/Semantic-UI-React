@@ -3,15 +3,15 @@ import _ from 'lodash'
 import PropTypes from 'prop-types'
 import { cloneElement, Component } from 'react'
 
-import {
-  makeDebugger,
-  META,
-  SUI,
-  useKeyOnly,
-} from '../../lib'
+import { makeDebugger, normalizeTransitionDuration, SUI, useKeyOnly } from '../../lib'
 import TransitionGroup from './TransitionGroup'
 
 const debug = makeDebugger('transition')
+
+const TRANSITION_TYPE = {
+  ENTERING: 'show',
+  EXITING: 'hide',
+}
 
 /**
  * A transition is an animation usually used to move content in or out of view.
@@ -19,13 +19,23 @@ const debug = makeDebugger('transition')
 export default class Transition extends Component {
   static propTypes = {
     /** Named animation event to used. Must be defined in CSS. */
-    animation: PropTypes.oneOf(SUI.TRANSITIONS),
+    animation: PropTypes.oneOfType([PropTypes.oneOf(SUI.TRANSITIONS), PropTypes.string]),
 
     /** Primary content. */
     children: PropTypes.element.isRequired,
 
+    /** Whether it is directional animation event or not. Use it only for custom transitions. */
+    directional: PropTypes.bool,
+
     /** Duration of the CSS transition animation in milliseconds. */
-    duration: PropTypes.number,
+    duration: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.shape({
+        hide: PropTypes.number,
+        show: PropTypes.number,
+      }),
+      PropTypes.string,
+    ]),
 
     /** Show the component; triggers the enter or exit animation. */
     visible: PropTypes.bool,
@@ -84,11 +94,6 @@ export default class Transition extends Component {
     unmountOnHide: false,
   }
 
-  static _meta = {
-    name: 'Transition',
-    type: META.TYPES.MODULE,
-  }
-
   static ENTERED = 'ENTERED'
   static ENTERING = 'ENTERING'
   static EXITED = 'EXITED'
@@ -132,6 +137,8 @@ export default class Transition extends Component {
 
   componentWillUnmount() {
     debug('componentWillUnmount()')
+
+    clearTimeout(this.timeoutId)
   }
 
   // ----------------------------------------
@@ -144,8 +151,11 @@ export default class Transition extends Component {
 
     this.nextStatus = null
     this.setState({ status, animating: true }, () => {
+      const durationType = TRANSITION_TYPE[status]
+      const durationValue = normalizeTransitionDuration(duration, durationType)
+
       _.invoke(this.props, 'onStart', null, { ...this.props, status })
-      setTimeout(this.handleComplete, duration)
+      this.timeoutId = setTimeout(this.handleComplete, durationValue)
     })
   }
 
@@ -181,13 +191,13 @@ export default class Transition extends Component {
   // ----------------------------------------
 
   computeClasses = () => {
-    const { animation, children } = this.props
+    const { animation, directional, children } = this.props
     const { animating, status } = this.state
 
     const childClasses = _.get(children, 'props.className')
-    const directional = _.includes(SUI.DIRECTIONAL_TRANSITIONS, animation)
+    const isDirectional = _.isNil(directional) ? _.includes(SUI.DIRECTIONAL_TRANSITIONS, animation) : directional
 
-    if (directional) {
+    if (isDirectional) {
       return cx(
         animation,
         childClasses,
@@ -200,11 +210,7 @@ export default class Transition extends Component {
       )
     }
 
-    return cx(
-      animation,
-      childClasses,
-      useKeyOnly(animating, 'animating transition'),
-    )
+    return cx(animation, childClasses, useKeyOnly(animating, 'animating transition'))
   }
 
   computeCompletedStatus = () => {
@@ -216,12 +222,7 @@ export default class Transition extends Component {
   }
 
   computeInitialStatuses = () => {
-    const {
-      visible,
-      mountOnShow,
-      transitionOnMount,
-      unmountOnHide,
-    } = this.props
+    const { visible, mountOnShow, transitionOnMount, unmountOnHide } = this.props
 
     if (visible) {
       if (transitionOnMount) {
@@ -251,7 +252,8 @@ export default class Transition extends Component {
     if (visible) {
       return {
         current: status === Transition.UNMOUNTED && Transition.EXITED,
-        next: (status !== Transition.ENTERING && status !== Transition.ENTERED) && Transition.ENTERING,
+        next:
+          status !== Transition.ENTERING && status !== Transition.ENTERED && Transition.ENTERING,
       }
     }
 
@@ -262,9 +264,13 @@ export default class Transition extends Component {
 
   computeStyle = () => {
     const { children, duration } = this.props
-    const childStyle = _.get(children, 'props.style')
+    const { status } = this.state
 
-    return { ...childStyle, animationDuration: `${duration}ms` }
+    const childStyle = _.get(children, 'props.style')
+    const type = TRANSITION_TYPE[status]
+    const animationDuration = type && `${normalizeTransitionDuration(duration, type)}ms`
+
+    return { ...childStyle, animationDuration }
   }
 
   // ----------------------------------------

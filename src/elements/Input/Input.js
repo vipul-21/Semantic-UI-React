@@ -1,7 +1,7 @@
 import cx from 'classnames'
 import _ from 'lodash'
 import PropTypes from 'prop-types'
-import React, { Children, cloneElement, Component } from 'react'
+import React, { Children, cloneElement, Component, createRef } from 'react'
 
 import {
   childrenUtils,
@@ -10,15 +10,14 @@ import {
   customPropTypes,
   getElementType,
   getUnhandledProps,
-  META,
-  partitionHTMLInputProps,
-  SUI,
+  handleRef,
+  partitionHTMLProps,
   useKeyOnly,
   useValueAndKey,
 } from '../../lib'
-import Button from '../../elements/Button'
-import Icon from '../../elements/Icon'
-import Label from '../../elements/Label'
+import Button from '../Button'
+import Icon from '../Icon'
+import Label from '../Label'
 
 /**
  * An Input is a field used to elicit a response from a user.
@@ -33,10 +32,7 @@ class Input extends Component {
     as: customPropTypes.as,
 
     /** An Input can be formatted to alert the user to an action they may perform. */
-    action: PropTypes.oneOfType([
-      PropTypes.bool,
-      customPropTypes.itemShorthand,
-    ]),
+    action: PropTypes.oneOfType([PropTypes.bool, customPropTypes.itemShorthand]),
 
     /** An action can appear along side an Input on the left or right. */
     actionPosition: PropTypes.oneOf(['left']),
@@ -53,17 +49,14 @@ class Input extends Component {
     /** An Input field can show the data contains errors. */
     error: PropTypes.bool,
 
-    /** Take on the size of it's container. */
+    /** Take on the size of its container. */
     fluid: PropTypes.bool,
 
     /** An Input field can show a user is currently interacting with it. */
     focus: PropTypes.bool,
 
     /** Optional Icon to display inside the Input. */
-    icon: PropTypes.oneOfType([
-      PropTypes.bool,
-      customPropTypes.itemShorthand,
-    ]),
+    icon: PropTypes.oneOfType([PropTypes.bool, customPropTypes.itemShorthand]),
 
     /** An Icon can appear inside an Input on the left or right. */
     iconPosition: PropTypes.oneOf(['left']),
@@ -86,19 +79,16 @@ class Input extends Component {
     /**
      * Called on change.
      *
-     * @param {SyntheticEvent} event - React's original SyntheticEvent.
-     * @param {object} data - All props and proposed value.
+     * @param {ChangeEvent} event - React's original SyntheticEvent.
+     * @param {object} data - All props and a proposed value.
      */
     onChange: PropTypes.func,
 
     /** An Input can vary in size. */
-    size: PropTypes.oneOf(SUI.SIZES),
+    size: PropTypes.oneOf(['mini', 'small', 'large', 'big', 'huge', 'massive']),
 
     /** An Input can receive focus. */
-    tabIndex: PropTypes.oneOfType([
-      PropTypes.number,
-      PropTypes.string,
-    ]),
+    tabIndex: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 
     /** Transparent Input has no background. */
     transparent: PropTypes.bool,
@@ -111,10 +101,7 @@ class Input extends Component {
     type: 'text',
   }
 
-  static _meta = {
-    name: 'Input',
-    type: META.TYPES.ELEMENT,
-  }
+  inputRef = createRef()
 
   computeIcon = () => {
     const { loading, icon } = this.props
@@ -130,7 +117,9 @@ class Input extends Component {
     if (disabled) return -1
   }
 
-  focus = () => (this.inputRef.focus())
+  focus = () => this.inputRef.current.focus()
+
+  select = () => this.inputRef.current.select()
 
   handleChange = (e) => {
     const value = _.get(e, 'target.value')
@@ -142,28 +131,29 @@ class Input extends Component {
     ...defaultProps,
     ...child.props,
     ref: (c) => {
-      _.invoke(child, 'ref', c)
-      this.handleInputRef(c)
+      handleRef(child.ref, c)
+      this.inputRef.current = c
     },
   })
-
-  handleInputRef = c => (this.inputRef = c)
 
   partitionProps = () => {
     const { disabled, type } = this.props
 
     const tabIndex = this.computeTabIndex()
     const unhandled = getUnhandledProps(Input, this.props)
-    const [htmlInputProps, rest] = partitionHTMLInputProps(unhandled)
+    const [htmlInputProps, rest] = partitionHTMLProps(unhandled)
 
-    return [{
-      ...htmlInputProps,
-      disabled,
-      type,
-      tabIndex,
-      onChange: this.handleChange,
-      ref: this.handleInputRef,
-    }, rest]
+    return [
+      {
+        ...htmlInputProps,
+        disabled,
+        type,
+        tabIndex,
+        onChange: this.handleChange,
+        ref: this.inputRef,
+      },
+      rest,
+    ]
   }
 
   render() {
@@ -216,13 +206,16 @@ class Input extends Component {
         return cloneElement(child, this.handleChildOverrides(child, htmlInputProps))
       })
 
-      return <ElementType {...rest} className={classes}>{childElements}</ElementType>
+      return (
+        <ElementType {...rest} className={classes}>
+          {childElements}
+        </ElementType>
+      )
     }
 
     // Render Shorthand
     // ----------------------------------------
-    const actionElement = Button.create(action)
-    const iconElement = Icon.create(this.computeIcon())
+    const actionElement = Button.create(action, { autoGenerateKey: false })
     const labelElement = Label.create(label, {
       defaultProps: {
         className: cx(
@@ -231,22 +224,22 @@ class Input extends Component {
           _.includes(labelPosition, 'corner') && labelPosition,
         ),
       },
+      autoGenerateKey: false,
     })
 
     return (
       <ElementType {...rest} className={classes}>
         {actionPosition === 'left' && actionElement}
-        {iconPosition === 'left' && iconElement}
         {labelPosition !== 'right' && labelElement}
-        {createHTMLInput(input || type, { defaultProps: htmlInputProps })}
+        {createHTMLInput(input || type, { defaultProps: htmlInputProps, autoGenerateKey: false })}
+        {Icon.create(this.computeIcon(), { autoGenerateKey: false })}
         {actionPosition !== 'left' && actionElement}
-        {iconPosition !== 'left' && iconElement}
         {labelPosition === 'right' && labelElement}
       </ElementType>
     )
   }
 }
 
-Input.create = createShorthandFactory(Input, type => ({ type }))
+Input.create = createShorthandFactory(Input, (type) => ({ type }))
 
 export default Input

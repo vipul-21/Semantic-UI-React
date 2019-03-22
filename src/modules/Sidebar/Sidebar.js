@@ -1,13 +1,16 @@
+import EventStack from '@semantic-ui-react/event-stack'
 import cx from 'classnames'
+import _ from 'lodash'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, { Component, createRef } from 'react'
 
+import Ref from '../../addons/Ref'
 import {
-  AutoControlledComponent as Component,
+  childrenUtils,
   customPropTypes,
+  doesNodeContainClick,
   getUnhandledProps,
   getElementType,
-  META,
   useKeyOnly,
 } from '../../lib'
 import SidebarPushable from './SidebarPushable'
@@ -22,7 +25,14 @@ class Sidebar extends Component {
     as: customPropTypes.as,
 
     /** Animation style. */
-    animation: PropTypes.oneOf(['overlay', 'push', 'scale down', 'uncover', 'slide out', 'slide along']),
+    animation: PropTypes.oneOf([
+      'overlay',
+      'push',
+      'scale down',
+      'uncover',
+      'slide out',
+      'slide along',
+    ]),
 
     /** Primary content. */
     children: PropTypes.node,
@@ -30,11 +40,46 @@ class Sidebar extends Component {
     /** Additional classes. */
     className: PropTypes.string,
 
-    /** Initial value of visible. */
-    defaultVisible: PropTypes.bool,
+    /** Shorthand for primary content. */
+    content: customPropTypes.contentShorthand,
 
     /** Direction the sidebar should appear on. */
     direction: PropTypes.oneOf(['top', 'right', 'bottom', 'left']),
+
+    /**
+     * Called before a sidebar begins to animate out.
+     *
+     * @param {SyntheticEvent} event - React's original SyntheticEvent.
+     * @param {object} data - All props.
+     */
+    onHide: PropTypes.func,
+
+    /**
+     * Called after a sidebar has finished animating out.
+     *
+     * @param {null}
+     * @param {object} data - All props.
+     */
+    onHidden: PropTypes.func,
+
+    /**
+     * Called when a sidebar has finished animating in.
+     *
+     * @param {null}
+     * @param {object} data - All props.
+     */
+    onShow: PropTypes.func,
+
+    /**
+     * Called when a sidebar begins animating in.
+     *
+     * @param {null}
+     * @param {object} data - All props.
+     */
+    onVisible: PropTypes.func,
+
+    /** A sidebar can handle clicks on the passed element. */
+    target: PropTypes.oneOfType([customPropTypes.domNode, customPropTypes.refObject]),
 
     /** Controls whether or not the sidebar is visible on the page. */
     visible: PropTypes.bool,
@@ -47,29 +92,55 @@ class Sidebar extends Component {
     direction: 'left',
   }
 
-  static autoControlledProps = [
-    'visible',
-  ]
-
-  static _meta = {
-    name: 'Sidebar',
-    type: META.TYPES.MODULE,
-  }
+  static animationDuration = 500
+  static autoControlledProps = ['visible']
 
   static Pushable = SidebarPushable
   static Pusher = SidebarPusher
 
-  startAnimating = (duration = 500) => {
-    clearTimeout(this.stopAnimatingTimer)
+  state = {}
+  ref = createRef()
 
-    this.setState({ animating: true })
+  componentDidUpdate(prevProps) {
+    const { visible: prevVisible } = prevProps
+    const { visible: currentVisible } = this.props
 
-    this.stopAnimatingTimer = setTimeout(() => this.setState({ animating: false }), duration)
+    if (prevVisible !== currentVisible) this.handleAnimationStart()
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.visible !== this.props.visible) {
-      this.startAnimating()
+  componentWillUnmount() {
+    clearTimeout(this.animationTimer)
+  }
+
+  handleAnimationStart = () => {
+    const { visible } = this.props
+    const callback = visible ? 'onVisible' : 'onHide'
+
+    this.setState({ animating: true }, () => {
+      clearTimeout(this.animationTimer)
+      this.animationTimer = setTimeout(this.handleAnimationEnd, Sidebar.animationDuration)
+
+      if (this.skipNextCallback) {
+        this.skipNextCallback = false
+        return
+      }
+
+      _.invoke(this.props, callback, null, this.props)
+    })
+  }
+
+  handleAnimationEnd = () => {
+    const { visible } = this.props
+    const callback = visible ? 'onShow' : 'onHidden'
+
+    this.setState({ animating: false })
+    _.invoke(this.props, callback, null, this.props)
+  }
+
+  handleDocumentClick = (e) => {
+    if (!doesNodeContainClick(this.ref.current, e)) {
+      this.skipNextCallback = true
+      _.invoke(this.props, 'onHide', e, { ...this.props, visible: false })
     }
   }
 
@@ -78,7 +149,9 @@ class Sidebar extends Component {
       animation,
       className,
       children,
+      content,
       direction,
+      target,
       visible,
       width,
     } = this.props
@@ -94,11 +167,17 @@ class Sidebar extends Component {
       'sidebar',
       className,
     )
-
     const rest = getUnhandledProps(Sidebar, this.props)
     const ElementType = getElementType(Sidebar, this.props)
 
-    return <ElementType {...rest} className={classes}>{children}</ElementType>
+    return (
+      <Ref innerRef={this.ref}>
+        <ElementType {...rest} className={classes}>
+          {childrenUtils.isNil(children) ? content : children}
+          {visible && <EventStack name='click' on={this.handleDocumentClick} target={target} />}
+        </ElementType>
+      </Ref>
+    )
   }
 }
 

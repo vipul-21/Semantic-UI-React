@@ -4,6 +4,7 @@ import React from 'react'
 import Radio from 'src/addons/Radio/Radio'
 import FormField from 'src/collections/Form/FormField'
 import { SUI } from 'src/lib'
+import Button from 'src/elements/Button/Button'
 import Checkbox from 'src/modules/Checkbox/Checkbox'
 import * as common from 'test/specs/commonTests'
 
@@ -11,7 +12,7 @@ describe('FormField', () => {
   common.isConformant(FormField)
   common.rendersChildren(FormField)
 
-  common.implementsHTMLLabelProp(FormField)
+  common.implementsHTMLLabelProp(FormField, { autoGenerateKey: false })
   common.implementsWidthProp(FormField, SUI.WIDTHS, {
     canEqual: false,
     propKey: 'width',
@@ -29,8 +30,7 @@ describe('FormField', () => {
       const controls = ['button', 'input', 'select', 'textarea']
 
       controls.forEach((control) => {
-        shallow(<FormField control={control} />)
-          .should.have.descendants(control)
+        shallow(<FormField control={control} />).should.have.descendants(control)
       })
     })
   })
@@ -38,8 +38,9 @@ describe('FormField', () => {
   describe('label', () => {
     it('wraps html checkbox inputs', () => {
       const text = faker.hacker.phrase()
-      const label = shallow(<FormField control='input' label={text} type='checkbox' />)
-        .find('label')
+      const label = shallow(<FormField control='input' label={text} type='checkbox' />).find(
+        'label',
+      )
 
       label.childAt(0).should.have.tagName('input')
       label.should.contain.text(text)
@@ -47,8 +48,7 @@ describe('FormField', () => {
 
     it('wraps html radio inputs', () => {
       const text = faker.hacker.phrase()
-      const label = shallow(<FormField control='input' label={text} type='radio' />)
-        .find('label')
+      const label = shallow(<FormField control='input' label={text} type='radio' />).find('label')
 
       label.childAt(0).should.have.tagName('input')
       label.should.contain.text(text)
@@ -111,6 +111,23 @@ describe('FormField', () => {
 
       wrapper.should.have.exactly(1).descendants('input')
       input.should.have.prop('required', true)
+    })
+  })
+
+  describe('content', () => {
+    it('is not set by default', () => {
+      const wrapper = shallow(<FormField control={Button} />)
+      const button = wrapper.find('Button')
+
+      wrapper.should.have.exactly(1).descendants('Button')
+      button.should.not.have.prop('content')
+    })
+    it('is passed to the control', () => {
+      const wrapper = shallow(<FormField control={Button} content='Click Me' />)
+      const button = wrapper.find('Button')
+
+      wrapper.should.have.exactly(1).descendants('Button')
+      button.should.have.prop('content', 'Click Me')
     })
   })
 })

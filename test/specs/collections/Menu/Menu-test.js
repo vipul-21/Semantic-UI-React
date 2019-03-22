@@ -11,9 +11,11 @@ import { sandbox } from 'test/utils'
 
 describe('Menu', () => {
   common.isConformant(Menu)
-  common.hasSubComponents(Menu, [MenuHeader, MenuItem, MenuMenu])
+  common.hasSubcomponents(Menu, [MenuHeader, MenuItem, MenuMenu])
   common.hasUIClassName(Menu)
-  common.rendersChildren(Menu)
+  common.rendersChildren(Menu, {
+    rendersContent: false,
+  })
 
   common.implementsWidthProp(Menu, SUI.WIDTHS, {
     canEqual: false,
@@ -42,19 +44,14 @@ describe('Menu', () => {
   common.propValueOnlyToClassName(Menu, 'size', _.without(SUI.SIZES, 'medium', 'big'))
 
   it('renders a `div` by default', () => {
-    shallow(<Menu />)
-      .should.have.tagName('div')
+    shallow(<Menu />).should.have.tagName('div')
   })
 
   describe('activeIndex', () => {
-    const items = [
-      { key: 'home', name: 'home' },
-      { key: 'users', name: 'users' },
-    ]
+    const items = [{ key: 'home', name: 'home' }, { key: 'users', name: 'users' }]
 
     it('is null by default', () => {
-      shallow(<Menu items={items} />)
-        .should.not.have.descendants('.active')
+      shallow(<Menu items={items} />).should.not.have.descendants('.active')
     })
 
     it('is set when clicking an item', () => {
@@ -115,10 +112,11 @@ describe('Menu', () => {
 
   describe('onItemClick', () => {
     it('can be omitted', () => {
-      const click = () => mount(<Menu items={[{ key: 'home', name: 'home' }]} />)
-        .find('MenuItem')
-        .first()
-        .simulate('click')
+      const click = () =>
+        mount(<Menu items={[{ key: 'home', name: 'home' }]} />)
+          .find('MenuItem')
+          .first()
+          .simulate('click')
 
       expect(click).to.not.throw()
     })

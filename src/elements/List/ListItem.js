@@ -9,10 +9,9 @@ import {
   customPropTypes,
   getElementType,
   getUnhandledProps,
-  META,
   useKeyOnly,
 } from '../../lib'
-import Image from '../../elements/Image'
+import Image from '../Image'
 import ListContent from './ListContent'
 import ListDescription from './ListDescription'
 import ListHeader from './ListHeader'
@@ -80,16 +79,10 @@ class ListItem extends Component {
     value: PropTypes.string,
   }
 
-  static _meta = {
-    name: 'ListItem',
-    parent: 'List',
-    type: META.TYPES.ELEMENT,
-  }
-
   handleClick = (e) => {
-    const { onClick } = this.props
+    const { disabled } = this.props
 
-    if (onClick) onClick(e, this.props)
+    if (!disabled) _.invoke(this.props, 'onClick', e, this.props)
   }
 
   render() {
@@ -118,30 +111,51 @@ class ListItem extends Component {
 
     if (!childrenUtils.isNil(children)) {
       return (
-        <ElementType {...rest} {...valueProp} role='listitem' className={classes} onClick={this.handleClick}>
+        <ElementType
+          {...valueProp}
+          role='listitem'
+          className={classes}
+          onClick={this.handleClick}
+          {...rest}
+        >
           {children}
         </ElementType>
       )
     }
 
-    const iconElement = ListIcon.create(icon)
-    const imageElement = Image.create(image)
+    const iconElement = ListIcon.create(icon, { autoGenerateKey: false })
+    const imageElement = Image.create(image, { autoGenerateKey: false })
 
     // See description of `content` prop for explanation about why this is necessary.
     if (!isValidElement(content) && _.isPlainObject(content)) {
       return (
-        <ElementType {...rest} {...valueProp} role='listitem' className={classes} onClick={this.handleClick}>
+        <ElementType
+          {...valueProp}
+          role='listitem'
+          className={classes}
+          onClick={this.handleClick}
+          {...rest}
+        >
           {iconElement || imageElement}
-          {ListContent.create(content, { header, description })}
+          {ListContent.create(content, {
+            autoGenerateKey: false,
+            defaultProps: { header, description },
+          })}
         </ElementType>
       )
     }
 
-    const headerElement = ListHeader.create(header)
-    const descriptionElement = ListDescription.create(description)
+    const headerElement = ListHeader.create(header, { autoGenerateKey: false })
+    const descriptionElement = ListDescription.create(description, { autoGenerateKey: false })
     if (iconElement || imageElement) {
       return (
-        <ElementType {...rest} {...valueProp} role='listitem' className={classes} onClick={this.handleClick}>
+        <ElementType
+          {...valueProp}
+          role='listitem'
+          className={classes}
+          onClick={this.handleClick}
+          {...rest}
+        >
           {iconElement || imageElement}
           {(content || headerElement || descriptionElement) && (
             <ListContent>
@@ -155,7 +169,13 @@ class ListItem extends Component {
     }
 
     return (
-      <ElementType {...rest} {...valueProp} role='listitem' className={classes} onClick={this.handleClick}>
+      <ElementType
+        {...valueProp}
+        role='listitem'
+        className={classes}
+        onClick={this.handleClick}
+        {...rest}
+      >
         {headerElement}
         {descriptionElement}
         {content}
@@ -164,6 +184,6 @@ class ListItem extends Component {
   }
 }
 
-ListItem.create = createShorthandFactory(ListItem, content => ({ content }))
+ListItem.create = createShorthandFactory(ListItem, (content) => ({ content }))
 
 export default ListItem

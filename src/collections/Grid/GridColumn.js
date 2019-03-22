@@ -4,12 +4,12 @@ import React from 'react'
 
 import {
   customPropTypes,
+  createShorthandFactory,
   getElementType,
   getUnhandledProps,
-  META,
   SUI,
   useKeyOnly,
-  useOnlyProp,
+  useMultipleProp,
   useTextAlignProp,
   useValueAndKey,
   useVerticalAlignProp,
@@ -40,7 +40,7 @@ function GridColumn(props) {
   const classes = cx(
     color,
     useKeyOnly(stretched, 'stretched'),
-    useOnlyProp(only, 'only'),
+    useMultipleProp(only, 'only'),
     useTextAlignProp(textAlign),
     useValueAndKey(floated, 'floated'),
     useVerticalAlignProp(verticalAlign),
@@ -56,13 +56,11 @@ function GridColumn(props) {
   const rest = getUnhandledProps(GridColumn, props)
   const ElementType = getElementType(GridColumn, props)
 
-  return <ElementType {...rest} className={classes}>{children}</ElementType>
-}
-
-GridColumn._meta = {
-  name: 'GridColumn',
-  parent: 'Grid',
-  type: META.TYPES.COLLECTION,
+  return (
+    <ElementType {...rest} className={classes}>
+      {children}
+    </ElementType>
+  )
 }
 
 GridColumn.propTypes = {
@@ -79,25 +77,31 @@ GridColumn.propTypes = {
   color: PropTypes.oneOf(SUI.COLORS),
 
   /** A column can specify a width for a computer. */
-  computer: PropTypes.oneOf(SUI.WIDTHS),
+  computer: customPropTypes.every([
+    customPropTypes.disallow(['width']),
+    PropTypes.oneOf(SUI.WIDTHS),
+  ]),
 
   /** A column can sit flush against the left or right edge of a row. */
   floated: PropTypes.oneOf(SUI.FLOATS),
 
   /** A column can specify a width for a large screen device. */
-  largeScreen: PropTypes.oneOf(SUI.WIDTHS),
+  largeScreen: customPropTypes.every([
+    customPropTypes.disallow(['width']),
+    PropTypes.oneOf(SUI.WIDTHS),
+  ]),
 
   /** A column can specify a width for a mobile device. */
-  mobile: PropTypes.oneOf(SUI.WIDTHS),
+  mobile: customPropTypes.every([customPropTypes.disallow(['width']), PropTypes.oneOf(SUI.WIDTHS)]),
 
-  /** A row can appear only for a specific device, or screen sizes. */
-  only: customPropTypes.onlyProp(SUI.VISIBILITY),
+  /** A column can appear only for a specific device, or screen sizes. */
+  only: customPropTypes.multipleProp(SUI.VISIBILITY),
 
   /** A column can stretch its contents to take up the entire grid or row height. */
   stretched: PropTypes.bool,
 
   /** A column can specify a width for a tablet device. */
-  tablet: PropTypes.oneOf(SUI.WIDTHS),
+  tablet: customPropTypes.every([customPropTypes.disallow(['width']), PropTypes.oneOf(SUI.WIDTHS)]),
 
   /** A column can specify its text alignment. */
   textAlign: PropTypes.oneOf(SUI.TEXT_ALIGNMENTS),
@@ -106,10 +110,18 @@ GridColumn.propTypes = {
   verticalAlign: PropTypes.oneOf(SUI.VERTICAL_ALIGNMENTS),
 
   /** A column can specify a width for a wide screen device. */
-  widescreen: PropTypes.oneOf(SUI.WIDTHS),
+  widescreen: customPropTypes.every([
+    customPropTypes.disallow(['width']),
+    PropTypes.oneOf(SUI.WIDTHS),
+  ]),
 
   /** Represents width of column. */
-  width: PropTypes.oneOf(SUI.WIDTHS),
+  width: customPropTypes.every([
+    customPropTypes.disallow(['computer', 'largeScreen', 'mobile', 'tablet', 'widescreen']),
+    PropTypes.oneOf(SUI.WIDTHS),
+  ]),
 }
+
+GridColumn.create = createShorthandFactory(GridColumn, children => ({ children }))
 
 export default GridColumn
