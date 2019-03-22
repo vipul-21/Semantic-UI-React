@@ -1,4 +1,6 @@
-export { default as AutoControlledComponent } from './AutoControlledComponent'
+import makeDebugger from './makeDebugger'
+
+export AutoControlledComponent from './AutoControlledComponent'
 export { getChildMapping, mergeChildMappings } from './childMapping'
 export * as childrenUtils from './childrenUtils'
 
@@ -6,36 +8,38 @@ export {
   useKeyOnly,
   useKeyOrValueAndKey,
   useValueAndKey,
-
-  useOnlyProp,
+  useMultipleProp,
   useTextAlignProp,
   useVerticalAlignProp,
   useWidthProp,
 } from './classNameBuilders'
 
 export * as customPropTypes from './customPropTypes'
-
-export {
-  debug,
-  makeDebugger,
-} from './debug'
+export eventStack from './eventStack'
 
 export * from './factories'
-export { default as getUnhandledProps } from './getUnhandledProps'
-export { default as getElementType } from './getElementType'
+export getUnhandledProps from './getUnhandledProps'
+export getElementType from './getElementType'
 
 export {
   htmlInputAttrs,
   htmlInputEvents,
   htmlInputProps,
-  partitionHTMLInputProps,
-} from './htmlInputPropsUtils'
+  htmlImageProps,
+  partitionHTMLProps,
+} from './htmlPropsUtils'
 
-export { default as isBrowser } from './isBrowser'
-export { default as leven } from './leven'
-export * as META from './META'
+export isBrowser from './isBrowser'
+export doesNodeContainClick from './doesNodeContainClick'
+export leven from './leven'
+export createPaginationItems from './createPaginationItems'
 export * as SUI from './SUI'
 
-export { default as keyboardKey } from './keyboardKey'
 export { numberToWordMap, numberToWord } from './numberToWord'
-export { default as objectDiff } from './objectDiff'
+export normalizeOffset from './normalizeOffset'
+export normalizeTransitionDuration from './normalizeTransitionDuration'
+export objectDiff from './objectDiff'
+export { handleRef, isRefObject } from './refUtils'
+
+// Heads up! We import/export for this module to safely remove it with "babel-plugin-filter-imports"
+export { makeDebugger }

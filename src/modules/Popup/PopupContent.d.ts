@@ -1,18 +1,24 @@
-import * as React from 'react';
+import * as React from 'react'
+import { SemanticShorthandContent } from '../../generic'
 
-export interface PopupContentProps {
-  [key: string]: any;
-
-  /** An element type to render as (string or function). */
-  as?: any;
-
-  /** Primary content. */
-  children?: React.ReactNode;
-
-  /** Additional classes. */
-  className?: string;
+export interface PopupContentProps extends StrictPopupContentProps {
+  [key: string]: any
 }
 
-declare const PopupContent: React.StatelessComponent<PopupContentProps>;
+export interface StrictPopupContentProps {
+  /** An element type to render as (string or function). */
+  as?: any
 
-export default PopupContent;
+  /** Primary content. */
+  children?: React.ReactNode
+
+  /** Additional classes. */
+  className?: string
+
+  /** Shorthand for primary content. */
+  content?: SemanticShorthandContent
+}
+
+declare const PopupContent: React.StatelessComponent<PopupContentProps>
+
+export default PopupContent

@@ -1,15 +1,15 @@
 import cx from 'classnames'
 import _ from 'lodash'
 import PropTypes from 'prop-types'
-import React, { Component } from 'react'
+import React, { Component, createRef } from 'react'
 
+import Ref from '../../addons/Ref'
 import {
   childrenUtils,
   customPropTypes,
   createShorthandFactory,
   getElementType,
   getUnhandledProps,
-  META,
   SUI,
   useKeyOnly,
   useKeyOrValueAndKey,
@@ -36,13 +36,13 @@ class Button extends Component {
     active: PropTypes.bool,
 
     /** A button can animate to show hidden content. */
-    animated: PropTypes.oneOfType([
-      PropTypes.bool,
-      PropTypes.oneOf(['fade', 'vertical']),
-    ]),
+    animated: PropTypes.oneOfType([PropTypes.bool, PropTypes.oneOf(['fade', 'vertical'])]),
 
-    /** A button can be attached to the top or bottom of other content. */
-    attached: PropTypes.oneOf(['left', 'right', 'top', 'bottom']),
+    /** A button can be attached to other content. */
+    attached: PropTypes.oneOfType([
+      PropTypes.bool,
+      PropTypes.oneOf(['left', 'right', 'top', 'bottom']),
+    ]),
 
     /** A basic button is less pronounced. */
     basic: PropTypes.bool,
@@ -72,7 +72,13 @@ class Button extends Component {
     /** A button can have different colors */
     color: PropTypes.oneOf([
       ...SUI.COLORS,
-      'facebook', 'google plus', 'instagram', 'linkedin', 'twitter', 'vk', 'youtube',
+      'facebook',
+      'google plus',
+      'instagram',
+      'linkedin',
+      'twitter',
+      'vk',
+      'youtube',
     ]),
 
     /** A button can reduce its padding to fit into tighter spaces. */
@@ -102,11 +108,7 @@ class Button extends Component {
     inverted: PropTypes.bool,
 
     /** Add a Label by text, props object, or pass a <Label />. */
-    label: customPropTypes.some([
-      PropTypes.string,
-      PropTypes.object,
-      PropTypes.element,
-    ]),
+    label: customPropTypes.some([PropTypes.string, PropTypes.object, PropTypes.element]),
 
     /** A labeled button can format a Label or Icon to appear on the left or right. */
     labelPosition: PropTypes.oneOf(['right', 'left']),
@@ -130,6 +132,9 @@ class Button extends Component {
     /** A button can be formatted to show different levels of emphasis. */
     primary: PropTypes.bool,
 
+    /** The role of the HTML element. */
+    role: PropTypes.string,
+
     /** A button can be formatted to show different levels of emphasis. */
     secondary: PropTypes.bool,
 
@@ -137,10 +142,7 @@ class Button extends Component {
     size: PropTypes.oneOf(SUI.SIZES),
 
     /** A button can receive focus. */
-    tabIndex: PropTypes.oneOfType([
-      PropTypes.number,
-      PropTypes.string,
-    ]),
+    tabIndex: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 
     /** A button can be formatted to toggle on and off. */
     toggle: PropTypes.bool,
@@ -150,14 +152,18 @@ class Button extends Component {
     as: 'button',
   }
 
-  static _meta = {
-    name: 'Button',
-    type: META.TYPES.ELEMENT,
-  }
-
   static Content = ButtonContent
   static Group = ButtonGroup
   static Or = ButtonOr
+
+  ref = createRef()
+
+  computeButtonAriaRole(ElementType) {
+    const { role } = this.props
+
+    if (!_.isNil(role)) return role
+    if (ElementType !== 'button') return 'button'
+  }
 
   computeElementType = () => {
     const { attached, label } = this.props
@@ -173,7 +179,7 @@ class Button extends Component {
     if (ElementType === 'div') return 0
   }
 
-  focus = () => _.invoke(this.ref, 'focus')
+  focus = () => _.invoke(this.ref.current, 'focus')
 
   handleClick = (e) => {
     const { disabled } = this.props
@@ -185,8 +191,6 @@ class Button extends Component {
 
     _.invoke(this.props, 'onClick', e, this.props)
   }
-
-  handleRef = c => (this.ref = c)
 
   hasIconClass = () => {
     const { labelPosition, children, content, icon } = this.props
@@ -242,13 +246,8 @@ class Button extends Component {
       useKeyOrValueAndKey(animated, 'animated'),
       useKeyOrValueAndKey(attached, 'attached'),
     )
-    const labeledClasses = cx(
-      useKeyOrValueAndKey(labelPosition || !!label, 'labeled'),
-    )
-    const wrapperClasses = cx(
-      useKeyOnly(disabled, 'disabled'),
-      useValueAndKey(floated, 'floated'),
-    )
+    const labeledClasses = cx(useKeyOrValueAndKey(labelPosition || !!label, 'labeled'))
+    const wrapperClasses = cx(useKeyOnly(disabled, 'disabled'), useValueAndKey(floated, 'floated'))
 
     const rest = getUnhandledProps(Button, this.props)
     const ElementType = getElementType(Button, this.props, this.computeElementType)
@@ -257,17 +256,27 @@ class Button extends Component {
     if (!_.isNil(label)) {
       const buttonClasses = cx('ui', baseClasses, 'button', className)
       const containerClasses = cx('ui', labeledClasses, 'button', className, wrapperClasses)
-      const labelElement = Label.create(label, { defaultProps: {
-        basic: true,
-        pointing: labelPosition === 'left' ? 'right' : 'left',
-      } })
+      const labelElement = Label.create(label, {
+        defaultProps: {
+          basic: true,
+          pointing: labelPosition === 'left' ? 'right' : 'left',
+        },
+        autoGenerateKey: false,
+      })
 
       return (
         <ElementType {...rest} className={containerClasses} onClick={this.handleClick}>
           {labelPosition === 'left' && labelElement}
-          <button className={buttonClasses} disabled={disabled} ref={this.handleRef} tabIndex={tabIndex}>
-            {Icon.create(icon)} {content}
-          </button>
+          <Ref innerRef={this.ref}>
+            <button
+              className={buttonClasses}
+              aria-pressed={toggle ? !!active : undefined}
+              disabled={disabled}
+              tabIndex={tabIndex}
+            >
+              {Icon.create(icon, { autoGenerateKey: false })} {content}
+            </button>
+          </Ref>
           {(labelPosition === 'right' || !labelPosition) && labelElement}
         </ElementType>
       )
@@ -275,21 +284,24 @@ class Button extends Component {
 
     const classes = cx('ui', baseClasses, wrapperClasses, labeledClasses, 'button', className)
     const hasChildren = !childrenUtils.isNil(children)
+    const role = this.computeButtonAriaRole(ElementType)
 
     return (
-      <ElementType
-        {...rest}
-        className={classes}
-        disabled={(disabled && ElementType === 'button') || undefined}
-        onClick={this.handleClick}
-        ref={this.handleRef}
-        role='button'
-        tabIndex={tabIndex}
-      >
-        {hasChildren && children}
-        {!hasChildren && Icon.create(icon)}
-        {!hasChildren && content}
-      </ElementType>
+      <Ref innerRef={this.ref}>
+        <ElementType
+          {...rest}
+          className={classes}
+          aria-pressed={toggle ? !!active : undefined}
+          disabled={(disabled && ElementType === 'button') || undefined}
+          onClick={this.handleClick}
+          role={role}
+          tabIndex={tabIndex}
+        >
+          {hasChildren && children}
+          {!hasChildren && Icon.create(icon, { autoGenerateKey: false })}
+          {!hasChildren && content}
+        </ElementType>
+      </Ref>
     )
   }
 }

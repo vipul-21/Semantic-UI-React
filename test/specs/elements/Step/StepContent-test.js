@@ -8,13 +8,15 @@ describe('StepContent', () => {
   common.rendersChildren(StepContent)
 
   common.implementsShorthandProp(StepContent, {
+    autoGenerateKey: false,
     propKey: 'title',
     ShorthandComponent: StepTitle,
-    mapValueToProps: val => ({ title: val }),
+    mapValueToProps: content => ({ content }),
   })
   common.implementsShorthandProp(StepContent, {
+    autoGenerateKey: false,
     propKey: 'description',
     ShorthandComponent: StepDescription,
-    mapValueToProps: val => ({ description: val }),
+    mapValueToProps: content => ({ content }),
   })
 })

@@ -4,10 +4,10 @@ import PropTypes from 'prop-types'
 import React from 'react'
 
 import {
+  childrenUtils,
   customPropTypes,
   getElementType,
   getUnhandledProps,
-  META,
   SUI,
   useKeyOnly,
   useKeyOrValueAndKey,
@@ -15,6 +15,7 @@ import {
   useValueAndKey,
 } from '../../lib'
 import SegmentGroup from './SegmentGroup'
+import SegmentInline from './SegmentInline'
 
 /**
  * A segment is used to create a grouping of related content.
@@ -29,10 +30,12 @@ function Segment(props) {
     clearing,
     color,
     compact,
+    content,
     disabled,
     floated,
     inverted,
     loading,
+    placeholder,
     padded,
     piled,
     raised,
@@ -55,6 +58,7 @@ function Segment(props) {
     useKeyOnly(disabled, 'disabled'),
     useKeyOnly(inverted, 'inverted'),
     useKeyOnly(loading, 'loading'),
+    useKeyOnly(placeholder, 'placeholder'),
     useKeyOnly(piled, 'piled'),
     useKeyOnly(raised, 'raised'),
     useKeyOnly(secondary, 'secondary'),
@@ -71,25 +75,22 @@ function Segment(props) {
   const rest = getUnhandledProps(Segment, props)
   const ElementType = getElementType(Segment, props)
 
-  return <ElementType {...rest} className={classes}>{children}</ElementType>
+  return (
+    <ElementType {...rest} className={classes}>
+      {childrenUtils.isNil(children) ? content : children}
+    </ElementType>
+  )
 }
 
 Segment.Group = SegmentGroup
-
-Segment._meta = {
-  name: 'Segment',
-  type: META.TYPES.ELEMENT,
-}
+Segment.Inline = SegmentInline
 
 Segment.propTypes = {
   /** An element type to render as (string or function). */
   as: customPropTypes.as,
 
   /** Attach segment to other content, like a header. */
-  attached: PropTypes.oneOfType([
-    PropTypes.bool,
-    PropTypes.oneOf(['top', 'bottom']),
-  ]),
+  attached: PropTypes.oneOfType([PropTypes.bool, PropTypes.oneOf(['top', 'bottom'])]),
 
   /** A basic segment has no special formatting. */
   basic: PropTypes.bool,
@@ -112,6 +113,9 @@ Segment.propTypes = {
   /** A segment may take up only as much space as is necessary. */
   compact: PropTypes.bool,
 
+  /** Shorthand for primary content. */
+  content: customPropTypes.contentShorthand,
+
   /** A segment may show its content is disabled. */
   disabled: PropTypes.bool,
 
@@ -125,10 +129,10 @@ Segment.propTypes = {
   loading: PropTypes.bool,
 
   /** A segment can increase its padding. */
-  padded: PropTypes.oneOfType([
-    PropTypes.bool,
-    PropTypes.oneOf(['very']),
-  ]),
+  padded: PropTypes.oneOfType([PropTypes.bool, PropTypes.oneOf(['very'])]),
+
+  /** A segment can be used to reserve space for conditionally displayed content. */
+  placeholder: PropTypes.bool,
 
   /** Formatted to look like a pile of pages. */
   piled: PropTypes.bool,

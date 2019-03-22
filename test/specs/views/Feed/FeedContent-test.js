@@ -1,5 +1,3 @@
-import React from 'react'
-
 import FeedContent from 'src/views/Feed/FeedContent'
 import FeedDate from 'src/views/Feed/FeedDate'
 import FeedSummary from 'src/views/Feed/FeedSummary'
@@ -12,33 +10,33 @@ describe('FeedContent', () => {
   common.rendersChildren(FeedContent)
 
   common.implementsShorthandProp(FeedContent, {
+    autoGenerateKey: false,
     propKey: 'date',
     ShorthandComponent: FeedDate,
     mapValueToProps: val => ({ content: val }),
   })
   common.implementsShorthandProp(FeedContent, {
+    autoGenerateKey: false,
     propKey: 'summary',
     ShorthandComponent: FeedSummary,
     mapValueToProps: val => ({ content: val }),
   })
   common.implementsShorthandProp(FeedContent, {
+    autoGenerateKey: false,
     propKey: 'extraImages',
     ShorthandComponent: FeedExtra,
     mapValueToProps: val => ({ images: val }),
   })
   common.implementsShorthandProp(FeedContent, {
+    autoGenerateKey: false,
     propKey: 'extraText',
     ShorthandComponent: FeedExtra,
     mapValueToProps: val => ({ text: true, content: val }),
   })
   common.implementsShorthandProp(FeedContent, {
+    autoGenerateKey: false,
     propKey: 'meta',
     ShorthandComponent: FeedMeta,
     mapValueToProps: val => ({ content: val }),
-  })
-
-  it('renders text with content prop', () => {
-    shallow(<FeedContent content='foo' />)
-      .should.contain.text('foo')
   })
 })

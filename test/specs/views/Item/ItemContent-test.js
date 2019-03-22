@@ -1,6 +1,3 @@
-import faker from 'faker'
-import React from 'react'
-
 import ItemContent from 'src/views/Item/ItemContent'
 import ItemDescription from 'src/views/Item/ItemDescription'
 import ItemExtra from 'src/views/Item/ItemExtra'
@@ -13,33 +10,29 @@ describe('ItemContent', () => {
   common.rendersChildren(ItemContent)
 
   common.implementsShorthandProp(ItemContent, {
+    autoGenerateKey: false,
     propKey: 'header',
     ShorthandComponent: ItemHeader,
     mapValueToProps: val => ({ content: val }),
   })
   common.implementsShorthandProp(ItemContent, {
+    autoGenerateKey: false,
     propKey: 'meta',
     ShorthandComponent: ItemMeta,
     mapValueToProps: val => ({ content: val }),
   })
   common.implementsShorthandProp(ItemContent, {
+    autoGenerateKey: false,
     propKey: 'description',
     ShorthandComponent: ItemDescription,
     mapValueToProps: val => ({ content: val }),
   })
   common.implementsShorthandProp(ItemContent, {
+    autoGenerateKey: false,
     propKey: 'extra',
     ShorthandComponent: ItemExtra,
     mapValueToProps: val => ({ content: val }),
   })
+
   common.implementsVerticalAlignProp(ItemContent)
-
-  describe('content prop', () => {
-    it('renders text', () => {
-      const text = faker.hacker.phrase()
-
-      shallow(<ItemContent content={text} />)
-        .should.contain.text(text)
-    })
-  })
 })
